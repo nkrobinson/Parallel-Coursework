@@ -85,10 +85,10 @@ void printTimeElapsed( char *text)
     printf( "%s: %f msec\n", text, elapsed);
 }
 
-void timeDirectImplementation( int lower, int upper, float* results)
+void timeDirectImplementation( int lower, int upper)
 {
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
-    sumTotient(lower, upper, results);
+    sumTotient(lower, upper);
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
     printTimeElapsed( "kernel equivalent on host");
 }
@@ -125,7 +125,7 @@ int main (int argc, char * argv[])
 
     /* Fill the vector with random float values.    */
     for (int i = 0; i < count; i++)
-        resuts[i] = 0;
+        results[i] = 0;
 
     err = initGPU();
 
@@ -154,7 +154,7 @@ int main (int argc, char * argv[])
         err = clReleaseKernel (kernel);
         err = freeDevice();
 
-        timeDirectImplementation( lower, upper, results);
+        timeDirectImplementation( lower, upper);
 
     }
 
