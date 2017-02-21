@@ -6,22 +6,6 @@
 #include "simple.h"
 
 const char *KernelSource =                        "\n"
-"__kernel void totient(                            \n"
-"   const unsigned int lower,                      \n"
-"   const unsigned int upper,                      \n"
-"   __global float* output)                        \n"
-"{                                                 \n"
-"   int i = get_global_id(0) + lower;              \n"
-"       output[i] = euler(i);                      \n"
-"}                                                 \n"
-"long euler(long n) {                              \n"
-"    long length, i;                               \n"
-"    length = 0;                                   \n"
-"    for (i = 1; i < n; i++)                       \n"
-"        if (relprime(n, i))                       \n"
-"            length++;                             \n"
-"    return length;                                \n"
-"}                                                 \n"
 "long hcf(long x, long y) {                        \n"
 "    long t;                                       \n"
 "    while (y != 0) {                              \n"
@@ -33,6 +17,22 @@ const char *KernelSource =                        "\n"
 "}                                                 \n"
 "int relprime(long x, long y) {                    \n"
 "    return hcf(x, y) == 1;                        \n"
+"}                                                 \n"
+"long euler(long n) {                              \n"
+"    long length, i;                               \n"
+"    length = 0;                                   \n"
+"    for (i = 1; i < n; i++)                       \n"
+"        if (relprime(n, i))                       \n"
+"            length++;                             \n"
+"    return length;                                \n"
+"}                                                 \n"
+"__kernel void totient(                            \n"
+"   const unsigned int lower,                      \n"
+"   const unsigned int upper,                      \n"
+"   __global long* output)                        \n"
+"{                                                 \n"
+"   int i = get_global_id(0);                      \n"
+"       output[i] = euler(i+lower);                \n"
 "}                                                 \n"
 "\n";
 
@@ -117,13 +117,11 @@ int main (int argc, char * argv[])
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
-    float *results = NULL;  /* Results returned from device.         */
-    //int correct;            /* Number of correct results returned.   */
-
+    long *results = NULL;  /* Results returned from device.         */
     int count = upper - lower;
     global[0] = count;
 
-    results = (float *) malloc (count * sizeof (float));
+    results = (long *) malloc (count * sizeof (long));
 
     /* Fill the vector with random float values.    */
     for (int i = 0; i < count; i++)
@@ -134,7 +132,7 @@ int main (int argc, char * argv[])
     if( err == CL_SUCCESS) {
         kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
                                                           IntConst, upper,
-                                                          FloatArr, count, results);
+                                                          LongArr, count, results);
 
         runKernel( kernel, 1, global, local);
 
@@ -159,7 +157,5 @@ int main (int argc, char * argv[])
         timeDirectImplementation( lower, upper);
 
     }
-
-
     return 0;
 }
