@@ -28,11 +28,12 @@ const char *KernelSource =                        "\n"
 "}                                                 \n"
 "__kernel void totient(                            \n"
 "   const unsigned int lower,                      \n"
-"   const unsigned int upper,                      \n"
-"   __global long* output)                        \n"
+"   __global long* output)                         \n"
 "{                                                 \n"
 "   int i = get_global_id(0);                      \n"
-"       output[i] = euler(i+lower);                \n"
+"   long res = euler((long)i+lower);               \n"
+"   output[i] = res;                               \n"
+"   printf('Thread: %d, Value:%ld',i,res);         \n"
 "}                                                 \n"
 "\n";
 
@@ -130,8 +131,7 @@ int main (int argc, char * argv[])
     err = initGPU();
 
     if( err == CL_SUCCESS) {
-        kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
-                                                          IntConst, upper,
+        kernel = setupKernel( KernelSource, "totient", 2, IntConst, lower,
                                                           LongArr, count, results);
 
         runKernel( kernel, 1, global, local);
