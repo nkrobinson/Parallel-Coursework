@@ -88,7 +88,7 @@ void printTimeElapsed( char *text)
 
 void timeDirectImplementation( int lower, int upper)
 {
-    print("Start Multithreading\n");
+    printf("Start Multithreading\n");
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
     sumTotient(lower, upper);
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
