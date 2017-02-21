@@ -96,8 +96,10 @@ void timeDirectImplementation( int lower, int upper)
 
 int main (int argc, char * argv[])
 {
-    int lower = argv[1];
-    int upper = argv[2];
+    //int lower = argv[1];
+    int lower = 1;
+    //int upper = argv[2];
+    int upper = 30;
 
     cl_int err;
     cl_kernel kernel;
