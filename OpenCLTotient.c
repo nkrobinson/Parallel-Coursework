@@ -33,7 +33,7 @@ const char *KernelSource =                        "\n"
 "   int i = get_global_id(0);                      \n"
 "   long res = euler((long)i+lower);               \n"
 "   output[i] = res;                               \n"
-"   printf('Thread: %d\n',i);       \n"
+"   printf(i);                                     \n"
 "}                                                 \n"
 "\n";
 
