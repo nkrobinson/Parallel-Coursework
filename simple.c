@@ -10,6 +10,7 @@ typedef struct {
   clarg_type arg_t;
   cl_mem dev_buf;
   float *host_buf;
+  long *host_bufl;
   int    num_elems;
   int    val;
 } kernel_arg;
@@ -48,7 +49,7 @@ cl_int initDevice ( int devType)
     err = clGetDeviceIDs (cpPlatform, devType, 1, &device_id, NULL);
     if (CL_SUCCESS != err) {
       die ("Error: Failed to create a device group!");
-    } else { 
+    } else {
       /* Create a compute context.  */
       context = clCreateContext (0, 1, &device_id, NULL, NULL, &err);
       if (!context || err != CL_SUCCESS) {
@@ -82,7 +83,7 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
   cl_int err = CL_SUCCESS;
   va_list ap;
   int i;
-  
+
   /* Create the compute program from the source buffer.  */
   program = clCreateProgramWithSource (context, 1,
                                        (const char **) &kernel_source,
@@ -115,6 +116,30 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
     for(i=0; (i<num_args) && (kernel != NULL); i++) {
       kernel_args[i].arg_t =va_arg(ap, clarg_type);
       switch( kernel_args[i].arg_t) {
+          case LongArr:
+            kernel_args[i].num_elems = va_arg(ap, int);
+            kernel_args[i].host_bufl = va_arg(ap, long *);
+            /* Create the device memory vector  */
+            kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
+                                                     sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
+            if (!kernel_args[i].dev_buf ) {
+              die ("Error: Failed to allocate device memory for arg %d!", i+1);
+              kernel = NULL;
+            } else {
+              err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
+                                                    sizeof (long) * kernel_args[i].num_elems,
+                                                    kernel_args[i].host_bufl, 0, NULL, NULL);
+              if( CL_SUCCESS != err) {
+                die ("Error: Failed to write to source array for arg %d!", i+1);
+                kernel = NULL;
+              }
+              err = clSetKernelArg (kernel, i, sizeof (cl_mem), &kernel_args[i].dev_buf);
+              if( CL_SUCCESS != err) {
+                die ("Error: Failed to set kernel arg %d!", i);
+                kernel = NULL;
+              }
+            }
+            break;
         case FloatArr:
           kernel_args[i].num_elems = va_arg(ap, int);
           kernel_args[i].host_buf = va_arg(ap, float *);
@@ -177,7 +202,13 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
       err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
                               CL_TRUE, 0, sizeof (float) * kernel_args[i].num_elems,
                               kernel_args[i].host_buf, 0, NULL, NULL);
-      if( err != CL_SUCCESS) 
+      if( err != CL_SUCCESS)
+        die( "Error: Failed to transfer back arg %d!", i);
+    if( kernel_args[i].arg_t == LongArr) {
+      err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
+                              CL_TRUE, 0, sizeof (long) * kernel_args[i].num_elems,
+                              kernel_args[i].host_bufl, 0, NULL, NULL);
+      if( err != CL_SUCCESS)
         die( "Error: Failed to transfer back arg %d!", i);
     }
   }
@@ -197,7 +228,9 @@ cl_int freeDevice()
   cl_int err;
 
   for( int i=0; i< num_kernel_args; i++) {
-    if( kernel_args[i].arg_t == FloatArr) 
+    if( kernel_args[i].arg_t == FloatArr)
+      err = clReleaseMemObject (kernel_args[i].dev_buf);
+    if( kernel_args[i].arg_t == LongArr)
       err = clReleaseMemObject (kernel_args[i].dev_buf);
   }
   err = clReleaseProgram (program);
@@ -206,6 +239,3 @@ cl_int freeDevice()
 
   return err;
 }
-
-
-
