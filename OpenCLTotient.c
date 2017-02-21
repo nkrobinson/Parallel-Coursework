@@ -33,6 +33,7 @@ const char *KernelSource =                        "\n"
 "   int i = get_global_id(0);                      \n"
 "   long res = euler((long)i+lower);               \n"
 "   output[i] = res;                               \n"
+"   printf('Thread: %d\n',i);       \n"
 "}                                                 \n"
 "\n";
 
@@ -87,6 +88,7 @@ void printTimeElapsed( char *text)
 
 void timeDirectImplementation( int lower, int upper)
 {
+    print("Start Multithreading\n");
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
     sumTotient(lower, upper);
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
