@@ -116,30 +116,30 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
     for(i=0; (i<num_args) && (kernel != NULL); i++) {
       kernel_args[i].arg_t =va_arg(ap, clarg_type);
       switch( kernel_args[i].arg_t) {
-          case LongArr:
-            kernel_args[i].num_elems = va_arg(ap, int);
-            kernel_args[i].host_bufl = va_arg(ap, long *);
-            /* Create the device memory vector  */
-            kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
-                                                     sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
-            if (!kernel_args[i].dev_buf ) {
-              die ("Error: Failed to allocate device memory for arg %d!", i+1);
+        case LongArr:
+          kernel_args[i].num_elems = va_arg(ap, int);
+          kernel_args[i].host_bufl = va_arg(ap, long *);
+          /* Create the device memory vector  */
+          kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
+                                                   sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
+          if (!kernel_args[i].dev_buf ) {
+            die ("Error: Failed to allocate device memory for arg %d!", i+1);
+            kernel = NULL;
+          } else {
+            err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
+                                                  sizeof (long) * kernel_args[i].num_elems,
+                                                  kernel_args[i].host_bufl, 0, NULL, NULL);
+            if( CL_SUCCESS != err) {
+              die ("Error: Failed to write to source array for arg %d!", i+1);
               kernel = NULL;
-            } else {
-              err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
-                                                    sizeof (long) * kernel_args[i].num_elems,
-                                                    kernel_args[i].host_bufl, 0, NULL, NULL);
-              if( CL_SUCCESS != err) {
-                die ("Error: Failed to write to source array for arg %d!", i+1);
-                kernel = NULL;
-              }
-              err = clSetKernelArg (kernel, i, sizeof (cl_mem), &kernel_args[i].dev_buf);
-              if( CL_SUCCESS != err) {
-                die ("Error: Failed to set kernel arg %d!", i);
-                kernel = NULL;
-              }
             }
-            break;
+            err = clSetKernelArg (kernel, i, sizeof (cl_mem), &kernel_args[i].dev_buf);
+            if( CL_SUCCESS != err) {
+              die ("Error: Failed to set kernel arg %d!", i);
+              kernel = NULL;
+            }
+          }
+          break;
         case FloatArr:
           kernel_args[i].num_elems = va_arg(ap, int);
           kernel_args[i].host_buf = va_arg(ap, float *);
@@ -188,10 +188,11 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
   cl_int err;
 
   clock_gettime( CLOCK_REALTIME, &start);
-  if (CL_SUCCESS
-      != clEnqueueNDRangeKernel (commands, kernel,
-                                 dim, NULL, global, local, 0, NULL, NULL))
+  int result = clEnqueueNDRangeKernel (commands, kernel, dim, NULL, global, local, 0, NULL, NULL);
+  if (CL_SUCCESS != result) {
+	printf("clEnqueue error: %d", result);
     die ("Error: Failed to execute kernel!");
+  }
 
   /* Wait for all commands to complete.  */
   err = clFinish (commands);
@@ -203,14 +204,14 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
                               CL_TRUE, 0, sizeof (float) * kernel_args[i].num_elems,
                               kernel_args[i].host_buf, 0, NULL, NULL);
       if( err != CL_SUCCESS)
-        die( "Error: Failed to transfer back arg %d!", i);
+        die( "FloatArr Error: Failed to transfer back arg %d!", i);
     }
     if( kernel_args[i].arg_t == LongArr) {
       err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
-                              CL_TRUE, 0, sizeof (long) * kernel_args[i].num_elems,
+                              CL_TRUE, 0, sizeof (float) * kernel_args[i].num_elems,
                               kernel_args[i].host_bufl, 0, NULL, NULL);
       if( err != CL_SUCCESS)
-        die( "Error: Failed to transfer back arg %d!", i);
+        die( "LongArr Error: Failed to transfer back arg %d!", i);
     }
   }
 

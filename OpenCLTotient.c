@@ -31,7 +31,7 @@ const char *KernelSource =                                 "\n"
 "   __global long* output)                                  \n"
 "{                                                          \n"
 "   int i = get_global_id(0);                               \n"
-"   long res = euler((long)i+lower);                        \n"
+"   long res = euler(i+lower);                              \n"
 "   output[i] = res;                                        \n"
 "}                                                          \n"
 "\n";
@@ -73,10 +73,23 @@ long sumTotient(long lower, long upper) {
     long sum, i;
 
     sum = 0;
-    for (i = lower; i <= upper; i++)
-        sum = sum + euler(i);
+    for (i = lower; i <= upper; i++) {
+		long res = euler(i);
+		printf("Result[0]: %ld\n",res);
+        sum = sum + res;
+	}
     return sum;
 }
+
+int sumArray(float a[], int num_elements)
+{
+   int i, sum=0;
+   for (i=0; i<num_elements; i++)
+   {
+	 sum = sum + a[i];
+   }
+   return(sum);
+} 
 
 void printTimeElapsed( char *text)
 {
@@ -108,7 +121,7 @@ int main (int argc, char * argv[])
     size_t local[1];
 
     if( argc <4) {
-        local[0] = 32;
+        local[0] = 1;
     } else {
         local[0] = atoi(argv[3]);
     }
@@ -118,11 +131,11 @@ int main (int argc, char * argv[])
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
-    long *results = NULL;  /* Results returned from device.         */
-    int count = upper - lower;
+    float *results = NULL;  /* Results returned from device.         */
+    int count = (upper - lower) + 1;
     global[0] = count;
-
-    results = (long *) malloc (count * sizeof (long));
+	local[0] = count /2;
+    results = (float *) malloc (count * sizeof (float));
 
     /* Fill the vector with random float values.    */
     for (int i = 0; i < count; i++)
@@ -131,10 +144,16 @@ int main (int argc, char * argv[])
     err = initGPU();
 
     if( err == CL_SUCCESS) {
+		printf("Setup Kernel\n");
         kernel = setupKernel( KernelSource, "totient", 2, IntConst, lower,
                                                           LongArr, count, results);
-
+		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
+        printf("Result: %d\n", sumArray(results, count));
+        printf("results[0]: %ld\n", results[0]);
+        printf("results[1]: %ld\n", results[1]);
+        printf("results[2]: %ld\n", results[2]);
+        
 
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
 
