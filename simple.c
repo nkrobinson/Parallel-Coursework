@@ -204,6 +204,7 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
                               kernel_args[i].host_buf, 0, NULL, NULL);
       if( err != CL_SUCCESS)
         die( "Error: Failed to transfer back arg %d!", i);
+    }
     if( kernel_args[i].arg_t == LongArr) {
       err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
                               CL_TRUE, 0, sizeof (long) * kernel_args[i].num_elems,
