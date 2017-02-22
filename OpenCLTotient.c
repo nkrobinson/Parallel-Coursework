@@ -155,10 +155,11 @@ int main (int argc, char * argv[])
     long *results = NULL;  /* Results returned from device.         */
     int count = (upper - lower) + 1;
     global[0] = count;
-    results = (long *) malloc (local[0] * sizeof (long));
+    int resSize = upper/local[0];
+    results = (long *) malloc (resSize * sizeof (long));
 
     /* Fill the vector with random float values.    */
-    for (int i = 0; i < (int)local[0]; i++)
+    for (int i = 0; i < resSize; i++)
         results[i] = -1;
 
     err = initGPU();
@@ -166,16 +167,16 @@ int main (int argc, char * argv[])
     if( err == CL_SUCCESS) {
 		printf("Setup Kernel\n");
         kernel = setupKernel( KernelSource, "totient", 2, IntConst, lower,
-                                                          LongArr, count, results);
+                                                          LongArr, resSize, results);
 		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
-        long result = sumArray(results, count);
+        long result = sumArray(results, resSize);
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
-        for (int i = 0; i < count; i++) {
-			//printf("results[%d]: %ld\n", i, results[i]);
-			if (results[i == -1])
-				break;
+        for (int i = 0; i < resSize; i++) {
+			printf("results[%d]: %ld\n", i, results[i]);
+			//if (results[i == -1])
+			//	break;
 		}
 
         printKernelTime();
