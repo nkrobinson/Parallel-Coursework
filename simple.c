@@ -122,7 +122,10 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
           /* Create the device memory vector  */
           kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
                                                    sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
-          if (!kernel_args[i].dev_buf ) {
+		  
+		  //printf("LongArr dev_buf: %ld \n", kernel_args[i].dev_buf);
+          
+		  if (!kernel_args[i].dev_buf ) {
             die ("Error: Failed to allocate device memory for arg %d!", i+1);
             kernel = NULL;
           } else {
@@ -189,8 +192,8 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
 
   clock_gettime( CLOCK_REALTIME, &start);
   int result = clEnqueueNDRangeKernel (commands, kernel, dim, NULL, global, local, 0, NULL, NULL);
+  printf("RUNKERNEL-RESULT: %d\n", result);
   if (CL_SUCCESS != result) {
-	printf("clEnqueue error: %d", result);
     die ("Error: Failed to execute kernel!");
   }
 
@@ -208,10 +211,15 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
     }
     if( kernel_args[i].arg_t == LongArr) {
       err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
-                              CL_TRUE, 0, sizeof (float) * kernel_args[i].num_elems,
+                              CL_TRUE, 0, sizeof (long) * kernel_args[i].num_elems,
                               kernel_args[i].host_bufl, 0, NULL, NULL);
-      if( err != CL_SUCCESS)
+	  //printf("LongArr kernel_args[i].num_elems %ld \n", kernel_args[i].num_elems);
+
+      if( err != CL_SUCCESS){
+		printf("LongArr kernel_args[i].num_elems %ld \n", (sizeof (long) * kernel_args[i].num_elems)/8);
+		printf("LongArr Transfer GPU -> Host error: %d \n", err);
         die( "LongArr Error: Failed to transfer back arg %d!", i);
+	  }
     }
   }
 

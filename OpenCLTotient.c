@@ -28,11 +28,11 @@ const char *KernelSource =                                 "\n"
 "}                                                          \n"
 "__kernel void totient(                                     \n"
 "   const unsigned int lower,                               \n"
-"   __global long* output)                                  \n"
+"   __global long* results)                                 \n"
 "{                                                          \n"
 "   int i = get_global_id(0);                               \n"
 "   long res = euler(i+lower);                              \n"
-"   output[i] = res;                                        \n"
+"   results[i] = res;                                       \n"
 "}                                                          \n"
 "\n";
 
@@ -75,15 +75,14 @@ long sumTotient(long lower, long upper) {
     sum = 0;
     for (i = lower; i <= upper; i++) {
 		long res = euler(i);
-		printf("Result[0]: %ld\n",res);
         sum = sum + res;
 	}
     return sum;
 }
 
-int sumArray(float a[], int num_elements)
+long sumArray(long a[], int num_elements)
 {
-   int i, sum=0;
+   long i, sum=0;
    for (i=0; i<num_elements; i++)
    {
 	 sum = sum + a[i];
@@ -100,46 +99,55 @@ void printTimeElapsed( char *text)
 
 void timeDirectImplementation( int lower, int upper)
 {
-    printf("Start Multithreading\n");
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
-    sumTotient(lower, upper);
+    long sum = sumTotient(lower, upper);
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
+    printf("Result: %ld\n",sum);
     printTimeElapsed( "kernel equivalent on host");
 }
 
 
 int main (int argc, char * argv[])
 {
-    //int lower = argv[1];
-    int lower = 1;
-    //int upper = argv[2];
-    int upper = 30;
-
+	int lower;
+	int upper;
     cl_int err;
     cl_kernel kernel;
     size_t global[1];
     size_t local[1];
-
-    if( argc <4) {
-        local[0] = 1;
-    } else {
-        local[0] = atoi(argv[3]);
-    }
+    
+    if (argc < 2) {
+		lower = 1;
+		upper = 30;
+		local[0] = 32;
+	} else if (argc < 3) {
+		lower = 1;
+		upper = atoi(argv[1]);
+		local[0] = 32;
+	} else if (argc < 4) {
+		lower = 1;
+		upper = atoi(argv[1]);
+		local[0] = atoi(argv[2]);
+	} else {
+		lower = atoi(argv[1]);
+		upper = atoi(argv[2]);
+		local[0] = atoi(argv[3]);
+	}
 
     printf( "work group size: %d\n", (int)local[0]);
 
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
-    float *results = NULL;  /* Results returned from device.         */
+    long *results = NULL;  /* Results returned from device.         */
     int count = (upper - lower) + 1;
     global[0] = count;
-	local[0] = count /2;
-    results = (float *) malloc (count * sizeof (float));
+	//local[0] = hcf(count, 20);
+    results = (long *) malloc (count * sizeof (long));
 
     /* Fill the vector with random float values.    */
     for (int i = 0; i < count; i++)
-        results[i] = 0;
+        results[i] = -1;
 
     err = initGPU();
 
@@ -149,13 +157,19 @@ int main (int argc, char * argv[])
                                                           LongArr, count, results);
 		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
-        printf("Result: %d\n", sumArray(results, count));
-        printf("results[0]: %ld\n", results[0]);
-        printf("results[1]: %ld\n", results[1]);
-        printf("results[2]: %ld\n", results[2]);
-        
-
+        long result = sumArray(results, count);
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
+        printf("Result: %ld\n", result);
+        for (int i = 0; i < count; i++) {
+			//printf("results[%d]: %ld\n", i, results[i]);
+			if (results[i == -1])
+				break;
+		}
+        //printf("results[0]: %ld\n", results[0]);
+        //printf("results[1]: %ld\n", results[1]);
+        //printf("results[2]: %ld\n", results[2]);
+        //printf("results[3]: %ld\n", results[3]);
+        //printf("results[4]: %ld\n", results[4]);
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
@@ -173,7 +187,7 @@ int main (int argc, char * argv[])
         err = clReleaseKernel (kernel);
         err = freeDevice();
 
-        timeDirectImplementation( lower, upper);
+        //timeDirectImplementation( lower, upper);
 
     }
     return 0;
