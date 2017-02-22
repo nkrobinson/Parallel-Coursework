@@ -37,11 +37,11 @@ const char *KernelSource =                                 "\n"
 "}                                                          \n"
 "__kernel void totient(                                     \n"
 "   const unsigned int lower,                               \n"
+"   __local long* locres, 	                                \n"
 "   __global long* results)                                 \n"
 "{                                                          \n"
-"	__local long* locres;									\n"
-"   int i = get_global_id(0);								\n"
 "   int j = get_local_id(0);								\n"
+"   int i = get_global_id(0);								\n"
 "	int lsize = (int)get_local_size(0);						\n"
 "   locres[j] = euler(i+lower);                           	\n"
 "	if (j==0)												\n"
@@ -132,11 +132,11 @@ int main (int argc, char * argv[])
     if (argc < 2) {
 		lower = 1;
 		upper = 30;
-		local[0] = hcf(upper, 100);
+		local[0] = hcf(upper, 10);
 	} else if (argc < 3) {
 		lower = 1;
 		upper = atoi(argv[1]);
-		local[0] = hcf(upper, 100);
+		local[0] = hcf(upper, 10);
 	} else if (argc < 4) {
 		lower = 1;
 		upper = atoi(argv[1]);
@@ -153,10 +153,13 @@ int main (int argc, char * argv[])
 
     /* Create data for the run.    */
     long *results = NULL;  /* Results returned from device.         */
+    long *locres = NULL;  /* Results returned from device.         */
+    
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
     results = (long *) malloc (resSize * sizeof (long));
+    locres = (long *) malloc (local[0] * sizeof (long));
 
     /* Fill the vector with random float values.    */
     for (int i = 0; i < resSize; i++)
@@ -166,7 +169,8 @@ int main (int argc, char * argv[])
 
     if( err == CL_SUCCESS) {
 		printf("Setup Kernel\n");
-        kernel = setupKernel( KernelSource, "totient", 2, IntConst, lower,
+        kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
+														  LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
 		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
@@ -174,9 +178,9 @@ int main (int argc, char * argv[])
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
         for (int i = 0; i < resSize; i++) {
-			printf("results[%d]: %ld\n", i, results[i]);
-			//if (results[i == -1])
-			//	break;
+			//printf("results[%d]: %ld\n", i, results[i]);
+			if (results[i == -1])
+				break;
 		}
 
         printKernelTime();
@@ -195,7 +199,7 @@ int main (int argc, char * argv[])
         err = clReleaseKernel (kernel);
         err = freeDevice();
 
-        //timeDirectImplementation( lower, upper);
+        timeDirectImplementation( lower, upper);
 
     }
     return 0;

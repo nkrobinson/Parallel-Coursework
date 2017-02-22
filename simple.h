@@ -52,6 +52,7 @@ extern cl_int initCPU ();
  ******************************************************************************/
 
 typedef enum {
+  LocalLongArr,
   LongArr,
   FloatArr,
   IntConst
