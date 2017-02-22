@@ -6,6 +6,15 @@
 #include "simple.h"
 
 const char *KernelSource =                                 "\n"
+"long sumArray(long a[], int num_elements)					\n"
+"{															\n"
+"   long i, sum=0;											\n"
+"   for (i=0; i<num_elements; i++)							\n"
+"   {														\n"
+"	 sum = sum + a[i];										\n"
+"   }														\n"
+"   return(sum);											\n"
+"} 															\n"
 "long hcf(long x, long y) {                                 \n"
 "    long t;                                                \n"
 "    while (y != 0) {                                       \n"
@@ -30,9 +39,13 @@ const char *KernelSource =                                 "\n"
 "   const unsigned int lower,                               \n"
 "   __global long* results)                                 \n"
 "{                                                          \n"
-"   int i = get_global_id(0);                               \n"
-"   long res = euler(i+lower);                              \n"
-"   results[i] = res;                                       \n"
+"	__local long* locres;									\n"
+"   int i = get_global_id(0);								\n"
+"   int j = get_local_id(0);								\n"
+"	int lsize = (int)get_local_size(0);						\n"
+"   locres[j] = euler(i+lower);                           	\n"
+"	if (j==0)												\n"
+"		results[i/lsize] = sumArray(locres, lsize);			\n"
 "}                                                          \n"
 "\n";
 
@@ -142,10 +155,10 @@ int main (int argc, char * argv[])
     long *results = NULL;  /* Results returned from device.         */
     int count = (upper - lower) + 1;
     global[0] = count;
-    results = (long *) malloc (count * sizeof (long));
+    results = (long *) malloc (local[0] * sizeof (long));
 
     /* Fill the vector with random float values.    */
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < (int)local[0]; i++)
         results[i] = -1;
 
     err = initGPU();
