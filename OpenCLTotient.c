@@ -132,11 +132,11 @@ int main (int argc, char * argv[])
     if (argc < 2) {
 		lower = 1;
 		upper = 30;
-		local[0] = hcf(upper, 10);
+		local[0] = hcf(upper, 30);
 	} else if (argc < 3) {
 		lower = 1;
 		upper = atoi(argv[1]);
-		local[0] = hcf(upper, 10);
+		local[0] = hcf(upper, 30);
 	} else if (argc < 4) {
 		lower = 1;
 		upper = atoi(argv[1]);
@@ -199,7 +199,7 @@ int main (int argc, char * argv[])
         err = clReleaseKernel (kernel);
         err = freeDevice();
 
-        timeDirectImplementation( lower, upper);
+        //timeDirectImplementation( lower, upper);
 
     }
     return 0;
