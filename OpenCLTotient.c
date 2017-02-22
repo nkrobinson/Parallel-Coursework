@@ -119,11 +119,11 @@ int main (int argc, char * argv[])
     if (argc < 2) {
 		lower = 1;
 		upper = 30;
-		local[0] = 32;
+		local[0] = hcf(upper, 100);
 	} else if (argc < 3) {
 		lower = 1;
 		upper = atoi(argv[1]);
-		local[0] = 32;
+		local[0] = hcf(upper, 100);
 	} else if (argc < 4) {
 		lower = 1;
 		upper = atoi(argv[1]);
@@ -142,7 +142,6 @@ int main (int argc, char * argv[])
     long *results = NULL;  /* Results returned from device.         */
     int count = (upper - lower) + 1;
     global[0] = count;
-	//local[0] = hcf(count, 20);
     results = (long *) malloc (count * sizeof (long));
 
     /* Fill the vector with random float values.    */
@@ -165,11 +164,6 @@ int main (int argc, char * argv[])
 			if (results[i == -1])
 				break;
 		}
-        //printf("results[0]: %ld\n", results[0]);
-        //printf("results[1]: %ld\n", results[1]);
-        //printf("results[2]: %ld\n", results[2]);
-        //printf("results[3]: %ld\n", results[3]);
-        //printf("results[4]: %ld\n", results[4]);
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
