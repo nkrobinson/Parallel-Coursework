@@ -40,10 +40,14 @@ const char *KernelSource =                                 "\n"
 "   __local long* locres, 	                                \n"
 "   __global long* results)                                 \n"
 "{                                                          \n"
-"   int j = get_local_id(0);								\n"
+"	__local long test;										\n"
+"	test = 0;												\n"
 "   int i = get_global_id(0);								\n"
+"	int j = (int)get_local_id(0);							\n"
 "	int lsize = (int)get_local_size(0);						\n"
-"   locres[j] = euler(i+lower);                           	\n"
+"   int groupNum = i / lsize;								\n"
+"   locres[j] = euler(lower + (j * lsize) + (i / lsize));	\n"
+"	CLK_LOCAL_MEM_FENCE;									\n"
 "	if (j==0)												\n"
 "		results[i/lsize] = sumArray(locres, lsize);			\n"
 "}                                                          \n"
@@ -95,13 +99,20 @@ long sumTotient(long lower, long upper) {
 
 long sumArray(long a[], int num_elements)
 {
-   int i;
-   long sum=0;
-   for (i=0; i<num_elements; i++)
-   {
-	 sum = sum + a[i];
-   }
-   return(sum);
+	int i;
+	long sum=0;
+	for (i=0; i<num_elements; i++)
+	{
+		sum = sum + a[i];
+	}
+	return(sum);
+}
+
+int sumUpTo(int num)
+{
+	if (num == 0)
+		return 0;
+	return num + sumUpTo(num--);
 } 
 
 void printTimeElapsed( char *text)
@@ -154,7 +165,8 @@ int main (int argc, char * argv[])
 
     /* Create data for the run.    */
     long *results = NULL;  /* Results returned from device.         */
-    long *locres = NULL;  /* Results returned from device.         */
+    //long *locres = NULL;  /* Results returned from device.         */
+    long *locres;  /* Results returned from device.         */
     
     int count = (upper - lower) + 1;
     global[0] = count;
