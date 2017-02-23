@@ -37,19 +37,23 @@ const char *KernelSource =                                 "\n"
 "}                                                          \n"
 "__kernel void totient(                                     \n"
 "   const unsigned int lower,                               \n"
+"   const unsigned int resSize,                             \n"
 "   __local long* locres, 	                                \n"
 "   __global long* results)                                 \n"
 "{                                                          \n"
-"	__local long test;										\n"
-"	test = 0;												\n"
-"   int i = get_global_id(0);								\n"
+"   int i = (int)get_global_id(0);							\n"
 "	int j = (int)get_local_id(0);							\n"
 "	int lsize = (int)get_local_size(0);						\n"
 "   int groupNum = i / lsize;								\n"
-"   locres[j] = euler(lower + (j * lsize) + (i / lsize));	\n"
+"   locres[j] = euler(lower + (groupNum * lsize) + j);		\n"
 "	CLK_LOCAL_MEM_FENCE;									\n"
-"	if (j==0)												\n"
-"		results[i/lsize] = sumArray(locres, lsize);			\n"
+"	if (j==0) {												\n"
+"		results[groupNum] = sumArray(locres, lsize);		\n"
+"	}                                                       \n"
+"	//CLK_GLOBAL_MEM_FENCE;									\n"
+"	//if (i==1) {												\n"
+"		//results[0] = sumArray(results, resSize);			\n"
+"	//}                                                       \n"
 "}                                                          \n"
 "\n";
 
@@ -165,8 +169,7 @@ int main (int argc, char * argv[])
 
     /* Create data for the run.    */
     long *results = NULL;  /* Results returned from device.         */
-    //long *locres = NULL;  /* Results returned from device.         */
-    long *locres;  /* Results returned from device.         */
+    long *locres = NULL;  /* Results returned from device.         */
     
     int count = (upper - lower) + 1;
     global[0] = count;
@@ -174,40 +177,27 @@ int main (int argc, char * argv[])
     results = (long *) malloc (resSize * sizeof (long));
     locres = (long *) malloc (local[0] * sizeof (long));
 
-    /* Fill the vector with random float values.    */
-    for (int i = 0; i < resSize; i++)
-        results[i] = -1;
-
     err = initGPU();
 
     if( err == CL_SUCCESS) {
 		printf("Setup Kernel\n");
-        kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
+        kernel = setupKernel( KernelSource, "totient", 4, IntConst, lower,
+														  IntConst, resSize,
 														  LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
 		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
         long result = sumArray(results, resSize);
+        //long result = results[0];
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
+        
         for (int i = 0; i < resSize; i++) {
 			//printf("results[%d]: %ld\n", i, results[i]);
-			if (results[i == -1])
-				break;
 		}
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
-
-        /* Validate our results.    */
-        //correct = 0;
-        //for (int i = 0; i < count; i++)
-        //    if (results[i] == data[i] * data[i])
-        //        correct++;
-
-        /* Print a brief summary detailing the results.    */
-        //printf ("Computed %d/%d %2.0f%% correct values\n", correct, count,
-        //                (float)count/correct*100.f);
 
         err = clReleaseKernel (kernel);
         err = freeDevice();
