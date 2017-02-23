@@ -6,17 +6,17 @@
 #include "simple.h"
 
 const char *KernelSource =                                 "\n"
-"long sumArray(long a[], int num_elements)					\n"
+"long sumArray(unsigned long a[], int num_elements)			\n"
 "{															\n"
 "   int i; 													\n"
-"	long sum=0;												\n"
+"	unsigned long sum=0;									\n"
 "   for (i=0; i<num_elements; i++)							\n"
 "   {														\n"
 "	 sum = sum + a[i];										\n"
 "   }														\n"
 "   return(sum);											\n"
 "} 															\n"
-"long hcf(long x, long y) {                                 \n"
+"long hcf(unsigned long x, unsigned long y) {               \n"
 "    long t;                                                \n"
 "    while (y != 0) {                                       \n"
 "        t = x % y;                                         \n"
@@ -25,11 +25,11 @@ const char *KernelSource =                                 "\n"
 "    }                                                      \n"
 "    return x;                                              \n"
 "}                                                          \n"
-"int relprime(long x, long y) {                             \n"
+"int relprime(unsigned long x, unsigned long y) {           \n"
 "    return hcf(x, y) == 1;                                 \n"
 "}                                                          \n"
-"long euler(long n) {                                       \n"
-"    long length, i;                                        \n"
+"long euler(unsigned long n) {                              \n"
+"    unsigned long length, i;                               \n"
 "    length = 0;                                            \n"
 "    for (i = 1; i < n; i++)                                \n"
 "        length += (relprime(n, i));                        \n"
@@ -38,20 +38,28 @@ const char *KernelSource =                                 "\n"
 "__kernel void totient(                                     \n"
 "   const unsigned int lower,                               \n"
 "   const unsigned int resSize,                             \n"
-"   __local long* locres, 	                                \n"
-"   __global long* results)                                 \n"
+"   __local unsigned long* locRes, 	                        \n"
+"   __global unsigned long* results)                        \n"
 "{                                                          \n"
 "   int i = (int)get_global_id(0);							\n"
 "	int j = (int)get_local_id(0);							\n"
 "	int lsize = (int)get_local_size(0);						\n"
-"   int groupNum = i / lsize;								\n"
-"   locres[j] = euler(lower + (groupNum * lsize) + j);		\n"
-"	CLK_LOCAL_MEM_FENCE;									\n"
+"   int groupNum = (int)get_group_id(0);					\n"
+"   locRes[j] = euler(lower + (groupNum * lsize) + j);		\n"
+"	barrier(CLK_LOCAL_MEM_FENCE);							\n"
 "	if (j==0) {												\n"
-"		results[groupNum] = sumArray(locres, lsize);		\n"
+"		results[groupNum] = sumArray(locRes, lsize);		\n"
 "	}                                                       \n"
-"	//CLK_GLOBAL_MEM_FENCE;									\n"
-"	//if (i==1) {												\n"
+"	//if (i==99) {											\n"
+"		//int invalid;										\n"
+"		//do {												\n"
+"		//	invalid = 0;									\n"
+"		//	for (int k = 0; k < resSize; k++) {				\n"
+"		//		if (results[k] == 0)						\n"
+"		//			invalid = 1;							\n"
+"		//			break;									\n"
+"		//	}												\n"
+"		//} while (invalid < 1);							\n"
 "		//results[0] = sumArray(results, resSize);			\n"
 "	//}                                                       \n"
 "}                                                          \n"
@@ -101,23 +109,16 @@ long sumTotient(long lower, long upper) {
     return sum;
 }
 
-long sumArray(long a[], int num_elements)
+unsigned long sumArray(unsigned long a[], int num_elements)
 {
 	int i;
-	long sum=0;
+	unsigned long sum=0;
 	for (i=0; i<num_elements; i++)
 	{
 		sum = sum + a[i];
 	}
 	return(sum);
 }
-
-int sumUpTo(int num)
-{
-	if (num == 0)
-		return 0;
-	return num + sumUpTo(num--);
-} 
 
 void printTimeElapsed( char *text)
 {
@@ -148,11 +149,11 @@ int main (int argc, char * argv[])
     if (argc < 2) {
 		lower = 1;
 		upper = 30;
-		local[0] = hcf(upper, 30);
+		local[0] = 10;
 	} else if (argc < 3) {
 		lower = 1;
 		upper = atoi(argv[1]);
-		local[0] = hcf(upper, 30);
+		local[0] = 10;
 	} else if (argc < 4) {
 		lower = 1;
 		upper = atoi(argv[1]);
@@ -168,14 +169,14 @@ int main (int argc, char * argv[])
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
-    long *results = NULL;  /* Results returned from device.         */
-    long *locres = NULL;  /* Results returned from device.         */
+    unsigned long *results = NULL;  /* Results returned from device.         */
+    unsigned long *locres = NULL;  /* Results returned from device.         */
     
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
-    results = (long *) malloc (resSize * sizeof (long));
-    locres = (long *) malloc (local[0] * sizeof (long));
+    results = (unsigned long *) malloc (resSize * sizeof (unsigned long));
+    locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
 
     err = initGPU();
 
@@ -187,14 +188,14 @@ int main (int argc, char * argv[])
                                                           LongArr, resSize, results);
 		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
-        long result = sumArray(results, resSize);
-        //long result = results[0];
+        unsigned long result = sumArray(results, resSize);
+        //unsigned long result = results[0];
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
         
-        for (int i = 0; i < resSize; i++) {
+        //for (int i = 0; i < resSize; i++) {
 			//printf("results[%d]: %ld\n", i, results[i]);
-		}
+		//}
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");

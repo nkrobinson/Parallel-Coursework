@@ -10,7 +10,7 @@ typedef struct {
   clarg_type arg_t;
   cl_mem dev_buf;
   float *host_buf;
-  long *host_bufl;
+  unsigned long *host_bufl;
   int    num_elems;
   int    val;
 } kernel_arg;
@@ -116,56 +116,57 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
     for(i=0; (i<num_args) && (kernel != NULL); i++) {
       kernel_args[i].arg_t =va_arg(ap, clarg_type);
       switch( kernel_args[i].arg_t) {
-		case LocalLongArr:
+        case LocalLongArr:
           kernel_args[i].num_elems = va_arg(ap, int);
-          kernel_args[i].host_bufl = va_arg(ap, long *);
+          kernel_args[i].host_bufl = va_arg(ap, unsigned long *);
           /* Create the device memory vector  */
-          kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
-                                                   sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
+          kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_ALLOC_HOST_PTR,
+                                                   sizeof (unsigned long) * kernel_args[i].num_elems, NULL, NULL);
 		  
 		  //printf("LongArr dev_buf: %ld \n", kernel_args[i].dev_buf);
           
 		  if (!kernel_args[i].dev_buf ) {
-            die ("Error: Failed to allocate device memory for arg %d!", i+1);
+            die ("LocalLongArr Error: Failed to allocate device memory for arg %d!", i+1);
             kernel = NULL;
           } else {
             err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
-                                                  sizeof (long) * kernel_args[i].num_elems,
+                                                  sizeof (unsigned long) * kernel_args[i].num_elems,
                                                   kernel_args[i].host_bufl, 0, NULL, NULL);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to write to source array for arg %d!", i+1);
+              die ("LocalLongArr Error: Failed to write to source array for arg %d!", i+1);
               kernel = NULL;
             }
             err = clSetKernelArg (kernel, i, sizeof (cl_mem), NULL);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to set kernel arg %d!", i);
+			  printf("LocalLongArr Error: clSetKernelArg %d\n", err);
+              die ("LocalLongArr Error: Failed to set kernel arg %d!", i);
               kernel = NULL;
             }
           }
           break;
         case LongArr:
           kernel_args[i].num_elems = va_arg(ap, int);
-          kernel_args[i].host_bufl = va_arg(ap, long *);
+          kernel_args[i].host_bufl = va_arg(ap, unsigned long *);
           /* Create the device memory vector  */
           kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
-                                                   sizeof (long) * kernel_args[i].num_elems, NULL, NULL);
+                                                   sizeof (unsigned long) * kernel_args[i].num_elems, NULL, NULL);
 		  
 		  //printf("LongArr dev_buf: %ld \n", kernel_args[i].dev_buf);
           
 		  if (!kernel_args[i].dev_buf ) {
-            die ("Error: Failed to allocate device memory for arg %d!", i+1);
+            die ("LongArr Error: Failed to allocate device memory for arg %d!", i+1);
             kernel = NULL;
           } else {
             err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
-                                                  sizeof (long) * kernel_args[i].num_elems,
+                                                  sizeof (unsigned long) * kernel_args[i].num_elems,
                                                   kernel_args[i].host_bufl, 0, NULL, NULL);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to write to source array for arg %d!", i+1);
+              die ("LongArr Error: Failed to write to source array for arg %d!", i+1);
               kernel = NULL;
             }
             err = clSetKernelArg (kernel, i, sizeof (cl_mem), &kernel_args[i].dev_buf);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to set kernel arg %d!", i);
+              die ("LongArr Error: Failed to set kernel arg %d!", i);
               kernel = NULL;
             }
           }
@@ -177,19 +178,19 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
           kernel_args[i].dev_buf = clCreateBuffer (context, CL_MEM_READ_WRITE,
                                                    sizeof (float) * kernel_args[i].num_elems, NULL, NULL);
           if (!kernel_args[i].dev_buf ) {
-            die ("Error: Failed to allocate device memory for arg %d!", i+1);
+            die ("FloatArr Error: Failed to allocate device memory for arg %d!", i+1);
             kernel = NULL;
           } else {
             err = clEnqueueWriteBuffer( commands, kernel_args[i].dev_buf, CL_TRUE, 0,
                                                   sizeof (float) * kernel_args[i].num_elems,
                                                   kernel_args[i].host_buf, 0, NULL, NULL);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to write to source array for arg %d!", i+1);
+              die ("FloatArr Error: Failed to write to source array for arg %d!", i+1);
               kernel = NULL;
             }
             err = clSetKernelArg (kernel, i, sizeof (cl_mem), &kernel_args[i].dev_buf);
             if( CL_SUCCESS != err) {
-              die ("Error: Failed to set kernel arg %d!", i);
+              die ("FloatArr Error: Failed to set kernel arg %d!", i);
               kernel = NULL;
             }
           }
@@ -198,12 +199,12 @@ cl_kernel setupKernel( const char *kernel_source, char *kernel_name, int num_arg
           kernel_args[i].val = va_arg(ap, unsigned int);
           err = clSetKernelArg (kernel, i, sizeof (unsigned int), &kernel_args[i].val);
           if( CL_SUCCESS != err) {
-            die ("Error: Failed to set kernel arg %d!", i);
+            die ("IntConst Error: Failed to set kernel arg %d!", i);
             kernel = NULL;
           }
           break;
         default:
-          die ("Error: illegal argument tag for executeKernel!");
+          die ("IntConst Error: illegal argument tag for executeKernel!");
           kernel = NULL;
       }
     }
@@ -238,14 +239,26 @@ cl_int runKernel( cl_kernel kernel, int dim, size_t *global, size_t *local)
     }
     if( kernel_args[i].arg_t == LongArr) {
       err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
-                              CL_TRUE, 0, sizeof (long) * kernel_args[i].num_elems,
+                              CL_TRUE, 0, sizeof (unsigned long) * kernel_args[i].num_elems,
                               kernel_args[i].host_bufl, 0, NULL, NULL);
 	  //printf("LongArr kernel_args[i].num_elems %ld \n", kernel_args[i].num_elems);
 
       if( err != CL_SUCCESS){
-		printf("LongArr kernel_args[i].num_elems %ld \n", (sizeof (long) * kernel_args[i].num_elems)/8);
+		printf("LongArr kernel_args[i].num_elems %ld \n", (sizeof (unsigned long) * kernel_args[i].num_elems)/8);
 		printf("LongArr Transfer GPU -> Host error: %d \n", err);
         die( "LongArr Error: Failed to transfer back arg %d!", i);
+	  }
+    }
+    if( kernel_args[i].arg_t == LocalLongArr) {
+      err = clEnqueueReadBuffer (commands, kernel_args[i].dev_buf,
+                              CL_TRUE, 0, sizeof (unsigned long) * kernel_args[i].num_elems,
+                              kernel_args[i].host_bufl, 0, NULL, NULL);
+	  //printf("LongArr kernel_args[i].num_elems %ld \n", kernel_args[i].num_elems);
+
+      if( err != CL_SUCCESS){
+		printf("LocalLongArr kernel_args[i].num_elems %ld \n", (sizeof (unsigned long) * kernel_args[i].num_elems)/8);
+		printf("LocalLongArr Transfer GPU -> Host error: %d \n", err);
+        die( "LocalLongArr Error: Failed to transfer back arg %d!", i);
 	  }
     }
   }
