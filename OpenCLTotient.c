@@ -8,7 +8,8 @@
 const char *KernelSource =                                 "\n"
 "long sumArray(long a[], int num_elements)					\n"
 "{															\n"
-"   long i, sum=0;											\n"
+"   int i; 													\n"
+"	long sum=0;												\n"
 "   for (i=0; i<num_elements; i++)							\n"
 "   {														\n"
 "	 sum = sum + a[i];										\n"
@@ -31,8 +32,7 @@ const char *KernelSource =                                 "\n"
 "    long length, i;                                        \n"
 "    length = 0;                                            \n"
 "    for (i = 1; i < n; i++)                                \n"
-"        if (relprime(n, i))                                \n"
-"            length++;                                      \n"
+"        length += (relprime(n, i));                        \n"
 "    return length;                                         \n"
 "}                                                          \n"
 "__kernel void totient(                                     \n"
@@ -95,7 +95,8 @@ long sumTotient(long lower, long upper) {
 
 long sumArray(long a[], int num_elements)
 {
-   long i, sum=0;
+   int i;
+   long sum=0;
    for (i=0; i<num_elements; i++)
    {
 	 sum = sum + a[i];
