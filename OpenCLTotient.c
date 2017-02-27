@@ -145,7 +145,7 @@ int main (int argc, char * argv[])
     cl_kernel kernel;
     size_t global[1];
     size_t local[1];
-    
+
     if (argc < 2) {
 		lower = 1;
 		upper = 30;
@@ -166,33 +166,32 @@ int main (int argc, char * argv[])
 
     printf( "work group size: %d\n", (int)local[0]);
 
+    int count = (upper - lower) + 1;
+    global[0] = count;
+    int resSize = upper/local[0];
+
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
     unsigned long *results = NULL;  /* Results returned from device.         */
     unsigned long *locres = NULL;  /* Results returned from device.         */
-    
-    int count = (upper - lower) + 1;
-    global[0] = count;
-    int resSize = upper/local[0];
+
     results = (unsigned long *) malloc (resSize * sizeof (unsigned long));
     locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
 
     err = initGPU();
 
     if( err == CL_SUCCESS) {
-		printf("Setup Kernel\n");
         kernel = setupKernel( KernelSource, "totient", 4, IntConst, lower,
 														  IntConst, resSize,
 														  LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
-		printf("Run Kernel\n");
         runKernel( kernel, 1, global, local);
         unsigned long result = sumArray(results, resSize);
         //unsigned long result = results[0];
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
-        
+
         //for (int i = 0; i < resSize; i++) {
 			//printf("results[%d]: %ld\n", i, results[i]);
 		//}

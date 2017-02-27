@@ -11,7 +11,7 @@ CFLAGS        += -O3 -Wall -Wextra -I$(OPENCL)/include -std=c99 -D_GNU_SOURCE
 LDFLAGS += -L$(OPENCL)/lib/x86_64  -l OpenCL -lrt
 
 
-all: seqTotient openclTotient OldopenclTotient
+all: seqTotient openclTotient OldopenclTotient GPUopenclTotient
 
 # Build a binary from C source.
 simple.o: simple.c
@@ -26,7 +26,10 @@ openclTotient: OpenCLTotient.c simple.o
 OldopenclTotient: OpenCLTotientOld.c simple.o
 	$(CC) $(CFLAGS) -std=c99 $(LDFLAGS) -o $@ $^
 
+GPUopenclTotient: OpenCLTotientGPU.c simple.o
+	$(CC) $(CFLAGS) -std=c99 $(LDFLAGS) -o $@ $^
+
 # Remove the binary.
 clean:
-	$(RM) seqTotient openclTotient simple.o OldopenclTotient
+	$(RM) seqTotient openclTotient simple.o OldopenclTotient GPUopenclTotient
 
