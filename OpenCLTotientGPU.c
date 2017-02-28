@@ -45,25 +45,30 @@ const char *KernelSource =                                "\n"
 "   int lsize = (int)get_local_size(0);                    \n"
 "   int groupNum = (int)get_group_id(0);                   \n"
 "   locRes[j] = euler(lower + (groupNum * lsize) + j);     \n"
-"   barrier(CLK_LOCAL_MEM_FENCE || CLK_GLOBAL_MEM_FENCE);  \n"
+"   barrier(CLK_LOCAL_MEM_FENCE);  \n"
 "   if (j==0) {                                            \n"
 "       results[groupNum] = sumArray(locRes, lsize);       \n"
 "   }                                                      \n"
 "}                                                         \n"
 "__kernel void sumResults(                                 \n"
-"   const unsigned int resNum,                            \n"
+"   const unsigned int resNum,                             \n"
 "   __global unsigned long* results)                       \n"
 "{                                                         \n"
-"   int j = (int)get_local_id(0);                          \n"
-"   int lsize = (int)get_local_size(0);                    \n"
-"   int halfSize = resNum / 2;                            \n"
-"   results[j] += results[j+halfSize];                     \n"
-"   barrier(CLK_LOCAL_MEM_FENCE || CLK_GLOBAL_MEM_FENCE);  \n"
-"   if (j==0) {                                            \n"
-"       for(int i = 1; i < halfSize; i++)                  \n"
-"           results[0] += results[i];                      \n"
-"       if (halfSize * 2 != resNum)                       \n"
-"           results[0] += results[resNum-1];              \n"
+"   if (resNum < 4) {                                      \n"
+"       results[0] = sumArray(results, resNum);            \n"
+"   } else {                                               \n"
+"       int j = (int)get_local_id(0);                      \n"
+"       int lsize = (int)get_local_size(0);                \n"
+"       int halfSize = resNum / 2;                         \n"
+"       int index = j * halfSize;                          \n"
+"       for (int i = 1; i < halfSize; i++)                 \n"
+"           results[index] += results[index + i];          \n"
+"       barrier(CLK_LOCAL_MEM_FENCE);                      \n"
+"       if (j==0) {                                        \n"
+"           results[0] += results[halfSize];               \n"
+"           if (halfSize * 2 != resNum)                    \n"
+"               results[0] += results[resNum-1];           \n"
+"       }                                                  \n"
 "   }                                                      \n"
 "}                                                         \n"
 "\n";
@@ -171,7 +176,6 @@ int main (int argc, char * argv[])
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
-    int halfSize = local[0] / 2;
 
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
@@ -191,10 +195,10 @@ int main (int argc, char * argv[])
         runKernel( kernel, 1, global, local);
         printKernelTime();
 
-        global[0] = halfSize;
-        local[0] = global[0];
-        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, local[0],
+        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
                                                              LongArr, resSize, results);
+        global[0] = 2;
+        local[0] = global[0];
         printf("Global: %d  Local: %d\n", (int) global[0], (int) local[0]);
         runKernel( kernel, 1, global, global);
         //global[0] = 1;
@@ -204,9 +208,9 @@ int main (int argc, char * argv[])
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
 
-        for (int i = 0; i < local[0]; i++) {
-            printf("results[%d]: %ld\n", i, results[i]);
-        }
+        //for (int i = 0; i < local[0]; i++) {
+            //printf("results[%d]: %ld\n", i, results[i]);
+        //}
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
