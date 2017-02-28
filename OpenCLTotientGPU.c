@@ -51,19 +51,19 @@ const char *KernelSource =                                "\n"
 "   }                                                      \n"
 "}                                                         \n"
 "__kernel void sumResults(                                 \n"
-"   const unsigned int resSize,                            \n"
+"   const unsigned int resNum,                            \n"
 "   __global unsigned long* results)                       \n"
 "{                                                         \n"
 "   int j = (int)get_local_id(0);                          \n"
 "   int lsize = (int)get_local_size(0);                    \n"
-"   int halfSize = resSize / 2;                            \n"
+"   int halfSize = resNum / 2;                            \n"
 "   results[j] += results[j+halfSize];                     \n"
 "   barrier(CLK_LOCAL_MEM_FENCE || CLK_GLOBAL_MEM_FENCE);  \n"
 "   if (j==0) {                                            \n"
 "       for(int i = 1; i < halfSize; i++)                  \n"
 "           results[0] += results[i];                      \n"
-"       if (halfSize * 2 != resSize)                       \n"
-"           results[0] += results[resSize-1];              \n"
+"       if (halfSize * 2 != resNum)                       \n"
+"           results[0] += results[resNum-1];              \n"
 "   }                                                      \n"
 "}                                                         \n"
 "\n";
@@ -193,7 +193,7 @@ int main (int argc, char * argv[])
 
         global[0] = halfSize;
         local[0] = global[0];
-        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
+        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, local[0],
                                                              LongArr, resSize, results);
         printf("Global: %d  Local: %d\n", (int) global[0], (int) local[0]);
         runKernel( kernel, 1, global, global);
