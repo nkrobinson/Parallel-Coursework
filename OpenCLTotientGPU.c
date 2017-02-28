@@ -168,16 +168,16 @@ int main (int argc, char * argv[])
 
     printf( "work group size: %d\n", (int)local[0]);
 
+    clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
+
+    /* Create data for the run.    */
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
     unsigned long result = 0;
 
-    clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
-
-    /* Create data for the run.    */
     unsigned long *results = NULL;  /* Results returned from device.         */
-    unsigned long *locres = NULL;  /* Results returned from device.         */
+    unsigned long *locres = NULL;  /* Array for summing local Results       */
 
     results = (unsigned long *) malloc (resSize * sizeof (unsigned long));
     locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
@@ -185,12 +185,14 @@ int main (int argc, char * argv[])
     err = initGPU();
 
     if( err == CL_SUCCESS) {
+        //Compute Euler Totient Sum and sum local groups
         kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
                                                           LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
         runKernel( kernel, 1, global, local);
         printKernelTime();
 
+        //Sum local group values and store result in first value
         kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
                                                              LongArr, resSize, results);
         global[0] = 2;
