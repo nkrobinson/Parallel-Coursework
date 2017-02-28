@@ -37,3 +37,7 @@ openclTotient
 OldopenclTotient
 GPUopenclTotient
 seqTotient
+
+# Ignore Folders
+Output/*
+Scripts/*
