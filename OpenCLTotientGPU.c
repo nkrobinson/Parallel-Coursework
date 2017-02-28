@@ -45,7 +45,7 @@ const char *KernelSource =                                "\n"
 "   int lsize = (int)get_local_size(0);                    \n"
 "   int groupNum = (int)get_group_id(0);                   \n"
 "   locRes[j] = euler(lower + (groupNum * lsize) + j);     \n"
-"   barrier(CLK_LOCAL_MEM_FENCE || CLK_LOCAL_MEM_FENCE);   \n"
+"   barrier(CLK_LOCAL_MEM_FENCE || CLK_GLOBAL_MEM_FENCE);  \n"
 "   if (j==0) {                                            \n"
 "       results[groupNum] = sumArray(locRes, lsize);       \n"
 "   }                                                      \n"
@@ -54,7 +54,18 @@ const char *KernelSource =                                "\n"
 "   const unsigned int resSize,                            \n"
 "   __global unsigned long* results)                       \n"
 "{                                                         \n"
-"   results[0] = sumArray(results, resSize);               \n"
+"   int j = (int)get_local_id(0);                          \n"
+"   int lsize = (int)get_local_size(0);                    \n"
+"   int halfSize = resSize / 2;                            \n"
+"   results[j] += results[j+halfSize];                     \n"
+"   barrier(CLK_LOCAL_MEM_FENCE || CLK_GLOBAL_MEM_FENCE);  \n"
+"   if (j==0) {                                            \n"
+"       int i = 1;                                         \n"
+"       while(i < halfSize)                                \n"
+"           results[0] += results[i];                      \n"
+"       if (halfSize * 2 != resSize)                       \n"
+"           results[0] += results[resSize-1];              \n"
+"   }                                                      \n"
 "}                                                         \n"
 "\n";
 
@@ -161,6 +172,7 @@ int main (int argc, char * argv[])
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
+    int halfSize = resSize / 2;
 
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
@@ -178,13 +190,15 @@ int main (int argc, char * argv[])
                                                           LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
         runKernel( kernel, 1, global, local);
+        printKernelTime();
+
         kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
                                                              LongArr, resSize, results);
-        //global[0] = resSize
-        //local[0] = global[0];
-        //runKernel( kernel, 1, global, local);
-        global[0] = 1;
-        runKernel( kernel, 1, global, global);
+        global[0] = halfSize;
+        local[0] = global[0];
+        runKernel( kernel, 1, global, local);
+        //global[0] = 1;
+        //runKernel( kernel, 1, global, global);
         //unsigned long result = sumArray(results, resSize);
         unsigned long result = results[0];
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
