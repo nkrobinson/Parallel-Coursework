@@ -180,7 +180,7 @@ int main (int argc, char * argv[])
     unsigned long *locres = NULL;  /* Results returned from device.         */
 
     results = (unsigned long *) malloc (resSize * sizeof (unsigned long));
-    //locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
+    locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
 
     err = initGPU();
 
