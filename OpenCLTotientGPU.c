@@ -145,6 +145,7 @@ int main (int argc, char * argv[])
     int upper;
     cl_int err;
     cl_kernel kernel;
+    cl_kernel kernel2;
     size_t global[1];
     size_t local[1];
 
@@ -168,7 +169,7 @@ int main (int argc, char * argv[])
 
     printf( "work group size: %d\n", (int)local[0]);
 
-    clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
+    //clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
     /* Create data for the run.    */
     int count = (upper - lower) + 1;
@@ -189,12 +190,13 @@ int main (int argc, char * argv[])
         kernel = setupKernel( KernelSource, "totient", 3, IntConst, lower,
                                                           LocalLongArr, local[0], locres,
                                                           LongArr, resSize, results);
-        runKernel( kernel, 1, global, local);
-        printKernelTime();
+        kernel2 = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
+                                                          LongArr, resSize, results);
 
+        clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
+        runKernel( kernel, 1, global, local);
+        //printKernelTime();
         //Sum local group values and store result in first value
-        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
-                                                             LongArr, resSize, results);
         global[0] = 2;
         runKernel( kernel, 1, global, global);
         //result = sumArray(results, resSize);
