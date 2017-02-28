@@ -194,7 +194,7 @@ int main (int argc, char * argv[])
                                                           LongArr, resSize, results);
 
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
-        runKernel( kernel, 1, global, local);
+        runKernel( kernel2, 1, global, local);
         //printKernelTime();
         //Sum local group values and store result in first value
         global[0] = 2;
