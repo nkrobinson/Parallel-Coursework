@@ -171,7 +171,7 @@ int main (int argc, char * argv[])
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
-    int halfSize = resSize / 2;
+    int halfSize = local[0] / 2;
 
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
@@ -191,11 +191,12 @@ int main (int argc, char * argv[])
         runKernel( kernel, 1, global, local);
         printKernelTime();
 
-        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
-                                                             LongArr, resSize, results);
         global[0] = halfSize;
         local[0] = global[0];
-        runKernel( kernel, 1, global, local);
+        kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
+                                                             LongArr, resSize, results);
+        printf("Global: %d  Local: %d\n", (int) global[0], (int) local[0]);
+        runKernel( kernel, 1, global, global);
         //global[0] = 1;
         //runKernel( kernel, 1, global, global);
         //unsigned long result = sumArray(results, resSize);
@@ -203,9 +204,9 @@ int main (int argc, char * argv[])
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
 
-        //for (int i = 0; i < resSize; i++) {
-            //printf("results[%d]: %ld\n", i, results[i]);
-        //}
+        for (int i = 0; i < local[0]; i++) {
+            printf("results[%d]: %ld\n", i, results[i]);
+        }
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
