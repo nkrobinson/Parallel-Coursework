@@ -6,14 +6,12 @@
 #include "simple.h"
 
 const char *KernelSource =                                "\n"
-"long sumArray(unsigned long a[], int num_elements)        \n"
+"long sumArray(unsigned long a[], int numElements)         \n"
 "{                                                         \n"
 "   int i;                                                 \n"
-"    unsigned long sum=0;                                  \n"
-"   for (i=0; i<num_elements; i++)                         \n"
-"   {                                                      \n"
+"   unsigned long sum=0;                                   \n"
+"   for (i = 0; i < numElements; i++)                      \n"
 "       sum = sum + a[i];                                  \n"
-"   }                                                      \n"
 "   return(sum);                                           \n"
 "}                                                         \n"
 "long hcf(unsigned long x, unsigned long y) {              \n"
@@ -45,7 +43,7 @@ const char *KernelSource =                                "\n"
 "   int lsize = (int)get_local_size(0);                    \n"
 "   int groupNum = (int)get_group_id(0);                   \n"
 "   locRes[j] = euler(lower + (groupNum * lsize) + j);     \n"
-"   barrier(CLK_LOCAL_MEM_FENCE);  \n"
+"   barrier(CLK_LOCAL_MEM_FENCE);                          \n"
 "   if (j==0) {                                            \n"
 "       results[groupNum] = sumArray(locRes, lsize);       \n"
 "   }                                                      \n"
@@ -58,7 +56,6 @@ const char *KernelSource =                                "\n"
 "       results[0] = sumArray(results, resNum);            \n"
 "   } else {                                               \n"
 "       int j = (int)get_local_id(0);                      \n"
-"       int lsize = (int)get_local_size(0);                \n"
 "       int halfSize = resNum / 2;                         \n"
 "       int index = j * halfSize;                          \n"
 "       for (int i = 1; i < halfSize; i++)                 \n"
@@ -79,7 +76,6 @@ struct timespec start, stop;
 // hcf x y = hcf y (rem x y)
 long hcf(long x, long y) {
     long t;
-
     while (y != 0) {
         t = x % y;
         x = y;
@@ -96,7 +92,6 @@ int relprime(long x, long y) {
 // euler n = length (filter (relprime n) [1 .. n-1])
 long euler(long n) {
     long length, i;
-
     length = 0;
     for (i = 1; i < n; i++)
         if (relprime(n, i))
@@ -107,7 +102,6 @@ long euler(long n) {
 // sumTotient lower upper = sum (map euler [lower, lower+1 .. upper])
 long sumTotient(long lower, long upper) {
     long sum, i;
-
     sum = 0;
     for (i = lower; i <= upper; i++) {
         long res = euler(i);
@@ -116,11 +110,12 @@ long sumTotient(long lower, long upper) {
     return sum;
 }
 
-unsigned long sumArray(unsigned long a[], int num_elements)
+// sumArray a numElements = sum(a)
+unsigned long sumArray(unsigned long a[], int numElements)
 {
     int i;
     unsigned long sum=0;
-    for (i=0; i<num_elements; i++)
+    for (i=0; i<numElements; i++)
     {
         sum = sum + a[i];
     }
@@ -176,6 +171,7 @@ int main (int argc, char * argv[])
     int count = (upper - lower) + 1;
     global[0] = count;
     int resSize = upper/local[0];
+    unsigned long result = 0;
 
     clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &start);
 
@@ -184,7 +180,7 @@ int main (int argc, char * argv[])
     unsigned long *locres = NULL;  /* Results returned from device.         */
 
     results = (unsigned long *) malloc (resSize * sizeof (unsigned long));
-    locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
+    //locres = (unsigned long *) malloc (local[0] * sizeof (unsigned long));
 
     err = initGPU();
 
@@ -198,19 +194,11 @@ int main (int argc, char * argv[])
         kernel = setupKernel( KernelSource, "sumResults", 2, IntConst, resSize,
                                                              LongArr, resSize, results);
         global[0] = 2;
-        local[0] = global[0];
-        printf("Global: %d  Local: %d\n", (int) global[0], (int) local[0]);
         runKernel( kernel, 1, global, global);
-        //global[0] = 1;
-        //runKernel( kernel, 1, global, global);
-        //unsigned long result = sumArray(results, resSize);
-        unsigned long result = results[0];
+        //result = sumArray(results, resSize);
+        result = results[0];
         clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &stop);
         printf("Result: %ld\n", result);
-
-        //for (int i = 0; i < local[0]; i++) {
-            //printf("results[%d]: %ld\n", i, results[i]);
-        //}
 
         printKernelTime();
         printTimeElapsed( "CPU time spent");
