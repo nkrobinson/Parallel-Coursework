@@ -14,6 +14,22 @@ import System.Environment
 import System.IO
 import System.CPUTime
 import Text.Printf
+import Control.Parallel
+import Control.Parallel.Strategies
+import Control.DeepSeq
+
+---------------------------------------------------------------------------
+
+-- nicParMap :: (a -> a) -> [a] -> Int -> [a]
+-- nicParMap f (x:xs) n
+--         | (x:xs)==[] = []
+--         | x < (n)  = (f x):(nicParMap f xs)
+--         | otherwise  = (fn:fn2) `using` strat
+--                     where fn = f x
+--                           fn2 = nicParMap f xs
+--                           strat result = do
+--                             rpar fn2
+--                             return result
 
 ---------------------------------------------------------------------------
 -- Main Function, sumTotient
@@ -24,7 +40,37 @@ import Text.Printf
 -- 3. Returns the sum of the results
 
 sumTotient :: Int -> Int -> Int
-sumTotient lower upper = sum (map euler [lower, lower+1 .. upper])
+sumTotient lower upper = sum (totient [lower, lower+1 .. upper])
+totient :: [Int] -> [Int]
+totient x = map euler x `using` parListChunk 100 rpar
+
+-- sumTotient lower upper = divideSumTotient lower upper
+
+divideSumTotient :: Int -> Int -> Int
+divideSumTotient lower upper
+    | (upper-lower) < 5 = sum (parMap rdeepseq euler [lower, lower+1 .. upper])
+    | otherwise         = divideSumTotient' (length [lower, lower+1 .. upper])  [lower, lower+1 .. upper]
+
+divideSumTotient' :: Int -> [Int] -> Int
+divideSumTotient' _ []     = 0
+divideSumTotient' size (x:xs)
+    | (size) < 5        = sum (map euler (x:xs))
+    | otherwise         = left `par` right `pseq` (left + right)
+                where mid   = size `div` 2
+                      left  = divideSumTotient' mid (take mid (x:xs))
+                      right = divideSumTotient' (mid-1) (drop (mid+1) (x:xs))
+
+-- divideSumTotient' lower upper [] = 0
+-- divideSumTotient' lower upper (x:xs) =
+--                 if (upper - lower) < 5
+--                     then sum (map euler (x:xs))
+--                 else
+--                     left `par` right `pseq` (left + right)
+--                         where size  = upper - lower
+--                               mid = size `div` 2
+--                               list  = (drop lower (take upper (x:xs)))
+--                               left  = divideSumTotient' lower mid (take mid list)
+--                               right = divideSumTotient' (mid+1) upper (drop (mid+1) list)
 
 ---------------------------------------------------------------------------
 -- euler
@@ -35,7 +81,14 @@ sumTotient lower upper = sum (map euler [lower, lower+1 .. upper])
 -- 3. Returns a count of the number of relatively prime elements
 
 euler :: Int -> Int
-euler n = length (filter (relprime n) [1 .. n-1])
+-- euler n = length (filter (relprime n) [1 .. n-1])
+euler n = length [x | x <- [1 .. n-1], relprime n x]
+
+-- parFilter f x:xs = concat
+
+-- relprimeToList n x xs
+--  | relprime n x = x:xs
+--  | otherwise    = xs
 
 ---------------------------------------------------------------------------
 -- relprime
@@ -54,13 +107,6 @@ relprime x y = hcf x y == 1
 hcf :: Int -> Int -> Int
 hcf x 0 = x
 hcf x y = hcf y (rem x y)
-
----------------------------------------------------------------------------
--- mkList
----------------------------------------------------------------------------
--- enumerate the interval in reverse order
-mkList :: Int -> Int -> [Int]
-mkList lower upper = reverse (enumFromTo lower upper)
 
 ---------------------------------------------------------------------------
 -- Interface Section
