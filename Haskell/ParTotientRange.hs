@@ -12,8 +12,6 @@ module Main(main) where
 
 import System.Environment
 import System.IO
-import System.CPUTime
-import Text.Printf
 import Control.Parallel
 import Control.Parallel.Strategies
 import Control.DeepSeq
