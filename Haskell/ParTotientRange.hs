@@ -116,10 +116,6 @@ main = do args <- getArgs
           let
             lower = read (args!!0) :: Int -- lower limit of the interval
             upper = read (args!!1) :: Int -- upper limit of the interval
-          start <- getCPUTime
           hPutStrLn stderr ("Sum of Totients between [" ++
                   (show lower) ++ ".." ++ (show upper) ++ "] is " ++
                    show (sumTotient lower upper))
-          end <- getCPUTime
-          let diff = (fromIntegral (end - start)) / (10^12)
-          printf "Computation time: %0.3f sec\n" (diff :: Double)
