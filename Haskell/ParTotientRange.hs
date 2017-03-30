@@ -26,10 +26,6 @@ import Control.DeepSeq
 
 sumTotient :: Int -> Int -> Int
 sumTotient lower upper = divideSumTotient lower upper
--- sumTotient lower upper = sum (totient [lower, lower+1 .. upper])
--- totient :: [Int] -> [Int]
--- totient x = map euler x `using` parListChunk 100 rpar
-
 
 divideSumTotient :: Int -> Int -> Int
 divideSumTotient lower upper
