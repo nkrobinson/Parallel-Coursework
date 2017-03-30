@@ -17,19 +17,6 @@ import Control.Parallel.Strategies
 import Control.DeepSeq
 
 ---------------------------------------------------------------------------
-
--- nicParMap :: (a -> a) -> [a] -> Int -> [a]
--- nicParMap f (x:xs) n
---         | (x:xs)==[] = []
---         | x < (n)  = (f x):(nicParMap f xs)
---         | otherwise  = (fn:fn2) `using` strat
---                     where fn = f x
---                           fn2 = nicParMap f xs
---                           strat result = do
---                             rpar fn2
---                             return result
-
----------------------------------------------------------------------------
 -- Main Function, sumTotient
 ---------------------------------------------------------------------------
 -- The main function, sumTotient
@@ -58,18 +45,6 @@ divideSumTotient' size (x:xs)
                       left  = divideSumTotient' mid (take mid (x:xs))
                       right = divideSumTotient' (mid-1) (drop (mid+1) (x:xs))
 
--- divideSumTotient' lower upper [] = 0
--- divideSumTotient' lower upper (x:xs) =
---                 if (upper - lower) < 5
---                     then sum (map euler (x:xs))
---                 else
---                     left `par` right `pseq` (left + right)
---                         where size  = upper - lower
---                               mid = size `div` 2
---                               list  = (drop lower (take upper (x:xs)))
---                               left  = divideSumTotient' lower mid (take mid list)
---                               right = divideSumTotient' (mid+1) upper (drop (mid+1) list)
-
 ---------------------------------------------------------------------------
 -- euler
 ---------------------------------------------------------------------------
@@ -81,12 +56,6 @@ divideSumTotient' size (x:xs)
 euler :: Int -> Int
 -- euler n = length (filter (relprime n) [1 .. n-1])
 euler n = length [x | x <- [1 .. n-1], relprime n x]
-
--- parFilter f x:xs = concat
-
--- relprimeToList n x xs
---  | relprime n x = x:xs
---  | otherwise    = xs
 
 ---------------------------------------------------------------------------
 -- relprime
