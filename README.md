@@ -12,7 +12,7 @@ Computing the sum of Euler totient computation. It is implemented using OpenCL. 
 ### Summary
 C+MPI provided better results than OpenCL. OpenCL Possibly better for personal use, as C+MPI relies on more expensive utilities.
 
-### [Report]()
+### [Report](https://github.com/kyleNR/Parallel-Coursework/blob/master/OpenCL/ReportCoursework1.pdf)
 ___
 
 ## Coursework 2
@@ -24,4 +24,4 @@ Computing the sum of Euler totient computation. It is implemented using Haskell.
 ### Summary
 
 
-### [Report]()
+### [Report](://github.com/kyleNR/Parallel-Coursework/blob/master/Haskell/Coursework2-report.pdf)
