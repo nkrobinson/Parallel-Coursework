@@ -24,4 +24,4 @@ Computing the sum of Euler totient computation. It is implemented using Haskell.
 ### Summary
 
 
-### [Report](://github.com/kyleNR/Parallel-Coursework/blob/master/Haskell/Coursework2-report.pdf)
+### [Report](https://github.com/kyleNR/Parallel-Coursework/blob/master/Haskell/Coursework2-report.pdf)
