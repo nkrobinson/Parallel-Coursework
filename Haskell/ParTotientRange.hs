@@ -1,11 +1,9 @@
 ---------------------------------------------------------------------------
--- Sequential Euler Totient Function
+-- Parallel Euler Totient Function
 ---------------------------------------------------------------------------
--- This program calculates the sum of the totients between a lower and an
--- upper limit, using arbitrary precision integers.
--- Phil Trinder, 26/6/03
--- Based on earlier work by Nathan Charles, Hans-Wolfgang Loidl and
--- Colin Runciman
+-- Created for Distributed and Parallel Techonologies
+-- Coursework 2
+-- Nicholas Robinson
 ---------------------------------------------------------------------------
 
 module Main(main) where
@@ -39,7 +37,7 @@ divideSumTotient' size (x:xs)
     | otherwise         = left `par` right `pseq` (left + right)
                 where mid   = size `div` 2
                       left  = divideSumTotient' mid (take mid (x:xs))
-                      right = divideSumTotient' (mid-1) (drop (mid+1) (x:xs))
+                      right = divideSumTotient' (mid) (drop (mid) (x:xs))
 
 ---------------------------------------------------------------------------
 -- euler
